@@ -5,7 +5,7 @@
 
 Track hours, stay focused with Pomodoro, and manage your goals — all in a single offline HTML file that runs directly in your browser.
 
-[**⬇️ Download IndieTimer**](indietimer.html)
+[**⬇️ Download IndieTime**](indietime.html)
 
 ---
 
