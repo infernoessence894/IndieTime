@@ -1,0 +1,1765 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Time Tracker</title>
+    <style>
+        /* DESIGN SYSTEM: SOFT INDIGO THEME */
+        :root {
+            --bg: #F8FAFC;                 
+            --card: #FFFFFF;               
+            --border: #E2E8F0;             
+            --text: #0F172A;               
+            --text-light: #64748B;         
+            
+            --primary: #4F46E5;            
+            --primary-light: #6366F1;      
+            
+            --toggle-bg: #E2E8F0;          
+            --toggle-btn: #FFFFFF;          
+            --progress-color: #EF4444;     
+            --row-even: #F8FAFC;           
+            --row-hover: #F1F5F9;          
+            --pomo-bg: #F8FAFC;            
+            --modal-overlay: rgba(15, 23, 42, 0.4);
+        }
+        [data-theme="dark"] {
+            --bg: #0F172A;                 
+            --card: #1E293B;               
+            --border: #334155;             
+            --text: #F8FAFC;               
+            --text-light: #94A3B8;         
+            
+            --primary: #6366F1;            
+            --primary-light: #818CF8;      
+            
+            --toggle-bg: #334155;          
+            --toggle-btn: #475569;          
+            --progress-color: #F87171;     
+            --row-even: #0F172A;           
+            --row-hover: #334155;          
+            --pomo-bg: #0F172A;            
+            --modal-overlay: rgba(0, 0, 0, 0.75);
+        }
+        
+        * { box-sizing: border-box; }
+        body { 
+            font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+            max-width: 1200px; 
+            margin: 40px auto; 
+            padding: 0 20px; 
+            background: var(--bg); 
+            color: var(--text); 
+            line-height: 1.5;
+            transition: background 0.3s ease, color 0.3s ease;
+        }
+        h1 { 
+            font-size: 2.1rem; 
+            font-weight: 700; 
+            margin: 0 0 4px 0; 
+            color: var(--text);
+            white-space: nowrap;
+            letter-spacing: -0.025em;
+        }
+        h2 {
+            font-weight: 600;
+            letter-spacing: -0.02em;
+            color: var(--text);
+            margin-top: 0;
+            margin-bottom: 16px;
+        }
+        .subtitle { color: var(--text-light); margin-bottom: 0; font-weight: 500; }
+        .card { 
+            background: var(--card); 
+            border-radius: 16px; 
+            padding: 24px; 
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.03);
+            border: 1px solid var(--border);
+            margin-bottom: 24px;
+            transition: background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        /* VIEW NAVIGATION & TRANSITIONS */
+        .inner-tabs-container {
+            display: flex; 
+            background: var(--toggle-bg);
+            padding: 5px;
+            border-radius: 12px; 
+            border: 1px solid var(--border);
+            height: 52px; 
+            width: 100%;
+            max-width: 400px;
+            margin: 0 0 24px 0;
+            user-select: none;
+        }
+        .inner-tab {
+            flex: 1; 
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            border-radius: 8px; 
+            color: var(--text-light);
+            background: transparent;
+            border: none;
+            box-shadow: none;
+            transition: all 0.2s ease-in-out;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .inner-tab:hover { background: transparent; color: var(--text); }
+        .inner-tab.active { 
+            color: var(--text); 
+            background: var(--toggle-btn); 
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); 
+        }
+
+        .inner-view-section {
+            display: none;
+            animation: fadeIn 0.35s ease;
+        }
+        .inner-view-section.active { display: block; }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* UNIFORM INPUT FIELDS */
+        input[type="text"], input[type="number"], input[type="date"], input[type="time"], select, textarea { 
+            padding: 11px 16px; 
+            font-size: 15px; 
+            border-radius: 8px; 
+            border: 1px solid var(--border);
+            height: 44px;
+            background: var(--card);
+            color: var(--text);
+            width: 100%;
+            font-family: inherit;
+            transition: all 0.2s ease;
+        }
+        textarea { height: auto; resize: vertical; }
+        input:focus, select:focus, textarea:focus { 
+            outline: none; 
+            border-color: var(--primary); 
+            box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.4); 
+        }
+        
+        .select-wrapper {
+            position: relative;
+            width: 100%;
+        }
+        .select-wrapper select {
+            appearance: none;
+            -webkit-appearance: none;
+            padding-right: 40px;
+        }
+        .select-wrapper::after {
+            content: "";
+            position: absolute;
+            right: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 12px;
+            height: 12px;
+            background-color: var(--text-light);
+            mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='currentColor'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2.5' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E") no-repeat center;
+            -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='currentColor'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2.5' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E") no-repeat center;
+            pointer-events: none;
+        }
+
+        button { 
+            background: var(--primary); 
+            color: white; 
+            border: none; 
+            cursor: pointer; 
+            font-weight: 600; 
+            transition: all 0.2s;
+            white-space: nowrap;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            border-radius: 8px;
+            height: 44px;
+            padding: 0 20px;
+        }
+        button:hover { background: var(--primary-light); transform: translateY(-1px); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
+        button:active { transform: translateY(0); }
+        button.danger { background: #EF4444; color: white; }
+        button.danger:hover { background: #DC2626; }
+        button.secondary { background: #64748B; color: white; }
+        button.secondary:hover { background: #475569; }
+        
+        .controls-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 12px;
+            width: 100%;
+        }
+
+        .table-responsive {
+            width: 100%;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        table { 
+            width: 100%; 
+            border-collapse: collapse; 
+        }
+        th { 
+            background: var(--card); 
+            text-align: center; 
+            padding: 14px 12px; 
+            font-weight: 600; 
+            color: var(--text-light);
+            border-bottom: 2px solid var(--border);
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            letter-spacing: 0.05em;
+        }
+        td { 
+            padding: 14px 12px; 
+            border-bottom: 1px solid var(--border);
+            vertical-align: middle;
+            text-align: center; 
+        }
+        tr { transition: background-color 0.15s ease; }
+        tr:hover { background: var(--row-hover); }
+        tr:nth-child(even) { background: var(--row-even); }
+        
+        .action-buttons {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            justify-content: center;
+        }
+        .action-btn {
+            font-size: 0.85em;
+            padding: 4px 12px;
+            height: 28px;
+            width: 68px;
+            font-weight: 600;
+            border-radius: 6px;
+        }
+        
+        .goals-container {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-top: 16px;
+        }
+        .goal-row {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            padding: 12px 16px;
+            background: var(--bg);
+            border-radius: 10px;
+            border: 1px solid var(--border);
+        }
+        .goal-label-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.95rem;
+            font-weight: 600;
+        }
+        .progress-container { 
+            height: 10px; 
+            background: var(--border); 
+            border-radius: 9999px; 
+            margin: 4px 0; 
+            overflow: hidden;
+        }
+        .progress-bar { 
+            height: 100%; 
+            background: var(--primary); 
+            transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.5s ease;
+        }
+        .toast { 
+            position: fixed; 
+            bottom: 24px; 
+            right: 24px; 
+            background: #0F172A; 
+            color: #F8FAFC; 
+            padding: 14px 22px; 
+            border-radius: 8px; 
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+            z-index: 10000; 
+            display: none;
+            font-weight: 500;
+            border: 1px solid #334155;
+        }
+        [data-theme="dark"] .toast {
+            background: #F8FAFC;
+            color: #0F172A;
+            border: 1px solid #E2E8F0;
+        }
+        
+        .header { 
+            display: flex; 
+            flex-direction: column;
+            gap: 16px;
+            margin-bottom: 24px; 
+            margin-top: 24px;
+        }
+        .header-title-area { width: 100%; }
+        .header-controls-area { 
+            display: flex; 
+            align-items: center; 
+            gap: 12px; 
+            width: 100%;
+            justify-content: space-between; 
+        }
+        
+        .settings-button { 
+            background: none; 
+            color: var(--text); 
+            border: 1px solid var(--border); 
+            padding: 8px 16px; 
+            height: 44px; 
+            font-weight: 500; 
+            display: inline-flex;
+            align-items: center;
+            flex: 1;
+            justify-content: center;
+        }
+        .settings-button:hover { background: var(--row-hover); color: var(--text); }
+        
+        .live-btn-container { display: flex; flex-direction: row; gap: 8px; margin-top: 16px; flex-wrap: wrap; width: 100%; }
+        .live-btn-container button { flex: 1; min-width: 110px; }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr); 
+            gap: 12px;
+            margin-bottom: 4px;
+        }
+        .stats-grid div {
+            padding: 12px;
+            background: var(--bg);
+            border-radius: 8px;
+            border: 1px dashed var(--border);
+            text-align: center;
+        }
+
+        .theme-toggle-container {
+            display: flex; 
+            background: var(--toggle-bg);
+            padding: 4px;
+            border-radius: 8px; 
+            border: 1px solid var(--border);
+            height: 44px; 
+            flex: 1;
+            user-select: none;
+            transition: all 0.25s ease;
+        }
+        .theme-toggle-option {
+            flex: 1; 
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            border-radius: 6px; 
+            color: var(--text-light);
+            transition: all 0.15s ease-in-out;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            height: 100%;
+        }
+        .theme-toggle-option.active { color: var(--text); background: var(--toggle-btn); box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); }
+
+        .live-session-layout {
+            display: flex;
+            flex-direction: column-reverse;
+            gap: 20px;
+        }
+        .live-inputs-column {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+        .live-display-column {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 24px;
+            background: var(--bg);
+            border-radius: 10px;
+            border: 1px solid var(--border);
+        }
+        .big-display-time {
+            font-size: clamp(2.5rem, 8vw, 4.2rem);
+            font-weight: 800;
+            line-height: 1.1;
+            font-variant-numeric: tabular-nums;
+            letter-spacing: -0.04em;
+            margin-bottom: 8px;
+            color: var(--text-light);
+            transition: color 0.2s ease;
+            word-break: break-all;
+            white-space: nowrap;
+        }
+        .big-display-time.active-glow { color: #EF4444; }
+        [data-theme="dark"] .big-display-time.active-glow { color: #F87171; }
+        
+        .big-display-label {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--text-light);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            max-width: 100%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .pomo-utility-box {
+            margin-top: 20px;
+            padding: 16px;
+            background: var(--pomo-bg);
+            border: 1px dashed var(--border);
+            border-radius: 8px;
+            display: none; 
+        }
+        .pomo-header-layout {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            align-items: center;
+        }
+        .pomo-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text);
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .pomo-display {
+            font-size: 1.75rem;
+            font-weight: 700;
+            font-variant-numeric: tabular-nums;
+        }
+        .pomo-btns {
+            display: flex;
+            gap: 8px;
+            width: 100%;
+        }
+        .pomo-btns button { flex: 1; }
+        .pomo-btn-sub { height: 38px; font-size: 14px; border-radius: 6px; }
+
+        .modal-overlay-container {
+            display: none; 
+            position: fixed; 
+            top: 0; left: 0; width: 100%; height: 100%; 
+            background: var(--modal-overlay); 
+            z-index: 2000; 
+            align-items: center; 
+            justify-content: center; 
+            backdrop-filter: blur(4px);
+            padding: 16px;
+        }
+        .modal-card {
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            margin-bottom: 0;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.15), 0 10px 10px -5px rgba(0, 0, 0, 0.15);
+        }
+
+        .settings-heading {
+            font-size: 1.5rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            margin: 0 0 16px 0;
+            color: var(--text);
+        }
+        .settings-label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-light);
+            margin-bottom: 6px;
+        }
+        .settings-group-card {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        .toggle-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 2px 0;
+            user-select: none;
+        }
+        .toggle-row-label {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text);
+        }
+        
+        .switch-container {
+            position: relative;
+            display: inline-block;
+            width: 44px;
+            height: 24px;
+            flex-shrink: 0;
+        }
+        .switch-container input { opacity: 0; width: 0; height: 0; }
+        .switch-slider {
+            position: absolute; cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: var(--border);
+            transition: .2s cubic-bezier(0.4, 0, 0.2, 1);
+            border-radius: 24px;
+        }
+        .switch-slider:before {
+            position: absolute; content: "";
+            height: 18px; width: 18px; left: 3px; bottom: 3px;
+            background-color: white;
+            transition: .2s cubic-bezier(0.4, 0, 0.2, 1);
+            border-radius: 50%;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+        }
+        input:checked + .switch-slider { background-color: #10B981; }
+        input:focus + .switch-slider { box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.4); }
+        input:checked + .switch-slider:before { transform: translateX(20px); }
+
+        .settings-inputs-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 12px;
+            margin-top: 4px;
+        }
+        .settings-input-sub-box { 
+            display: flex; 
+            flex-direction: column; 
+            justify-content: flex-end;
+            gap: 4px; 
+            height: 100%; 
+        }
+
+        .preset-filters { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+        .filter-btn { flex: 1; min-width: 75px; height: 36px; padding: 0 8px; font-size: 13px; border-radius: 6px; background: var(--card); color: var(--text-light); border: 1px solid var(--border); font-weight: 500; }
+        .filter-btn:hover { background: var(--row-hover); }
+        .filter-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
+
+        .btn-wrapper-badge { position: relative; width: 100%; display: flex; flex-direction: column; align-items: center; }
+        .advise-badge {
+            font-size: 11px;
+            font-weight: 700;
+            color: #eab308;
+            display: none; 
+            align-items: center;
+            gap: 4px;
+            justify-content: center;
+            margin-top: 4px;
+            position: static;
+        }
+
+        @media (max-width: 600px) {
+            .action-buttons { flex-direction: row; width: 100%; gap: 8px; }
+            .action-btn { flex: 1; width: auto; }
+        }
+
+        @media (min-width: 768px) {
+            body { padding: 0 30px; }
+            .header { flex-direction: row; justify-content: space-between; align-items: center; }
+            .header-title-area { width: auto; }
+            .header-controls-area { width: auto; justify-content: flex-end; gap: 16px; }
+            .settings-button { flex: none; width: 130px; }
+            .theme-toggle-container { flex: none; width: 180px; }
+            
+            .stats-grid { grid-template-columns: repeat(4, 1fr); gap: 16px; }
+            
+            .live-session-layout { flex-direction: row; gap: 24px; align-items: stretch; }
+            .live-inputs-column { flex: 1.3; }
+            .live-display-column { flex: 0.7; padding: 32px 24px; }
+            
+            .pomo-header-layout { flex-direction: row; justify-content: space-between; }
+            .pomo-btns { width: auto; }
+            .pomo-btns button { flex: none; }
+            
+            .controls-grid { grid-template-columns: 1.5fr 1fr repeat(4, auto); align-items: center; }
+            .advise-badge { position: absolute; bottom: -20px; left: 50%; transform: translateX(-50%); white-space: nowrap; margin-top: 0; }
+            
+            .modal-card { max-width: 800px; padding: 32px; overflow-y: visible; }
+            .settings-panel-grid { display: grid; grid-template-columns: 1.2fr 1fr; gap: 24px; margin-bottom: 24px; }
+            .settings-inputs-grid { grid-template-columns: repeat(3, 1fr); }
+            .settings-double-column { display: flex; flex-direction: column; gap: 16px; }
+        }
+    </style>
+    <script>
+        (function() {
+            const savedPreference = localStorage.getItem('themeMode') || 'auto';
+            if (savedPreference === 'auto') {
+                const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                document.documentElement.setAttribute('data-theme', systemDark ? 'dark' : 'light');
+            } else {
+                document.documentElement.setAttribute('data-theme', savedPreference);
+            }
+        })();
+    </script>
+</head>
+<body>
+    <div class="header">
+        <div class="header-title-area">
+            <h1>Time Tracker</h1>
+            <div class="subtitle" id="appSubtitle">Notary Work</div>
+        </div>
+        <div class="header-controls-area">
+            <button onclick="openSettings()" class="settings-button">⚙️ Settings</button>
+            <div class="theme-toggle-container" id="themeToggleBox">
+                <div class="theme-toggle-option" data-value="auto" onclick="setThemeMode('auto')">Auto</div>
+                <div class="theme-toggle-option" data-value="light" onclick="setThemeMode('light')">☀️</div>
+                <div class="theme-toggle-option" data-value="dark" onclick="setThemeMode('dark')">🌙</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>Overview</h2>
+        <div id="stats" class="stats-grid"></div>
+        
+        <div class="goals-container">
+            <div id="dailyGoalRow" class="goal-row">
+                <div class="goal-label-container">
+                    <span>Daily Progress</span>
+                    <span id="dailyTotalLabel">0.00 / 4.00 hrs</span>
+                </div>
+                <div class="progress-container"><div id="dailyProgressBar" class="progress-bar" style="width:0%"></div></div>
+            </div>
+            
+            <div id="weeklyGoalRow" class="goal-row">
+                <div class="goal-label-container">
+                    <span>Weekly Progress</span>
+                    <span id="weeklyTotalLabel">0.00 / 20.00 hrs</span>
+                </div>
+                <div class="progress-container"><div id="weeklyProgressBar" class="progress-bar" style="width:0%"></div></div>
+            </div>
+            
+            <div id="monthlyGoalRow" class="goal-row">
+                <div class="goal-label-container">
+                    <span>Monthly Progress</span>
+                    <span id="monthlyTotalLabel">0.00 / 80.00 hrs</span>
+                </div>
+                <div class="progress-container"><div id="monthlyProgressBar" class="progress-bar" style="width:0%"></div></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>Live Session</h2>
+        <div class="live-session-layout">
+            <div class="live-inputs-column">
+                <div style="display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; align-items: center;">
+                    <div class="select-wrapper" style="flex: 1; min-width: 160px;">
+                        <select id="recentTasksSelect" onchange="useRecentTask(this)">
+                            <option value="">-- Select Recent Task --</option>
+                        </select>
+                    </div>
+                    <input type="text" id="liveTaskInput" placeholder="Task name..." style="flex: 1.5; min-width: 180px;">
+                </div>
+                <input type="text" id="liveNotesInput" placeholder="Session notes / descriptions (optional)..." style="margin-bottom: 4px;">
+                
+                <div class="live-btn-container">
+                    <button onclick="toggleTimer()" class="timer-btn" id="timerButton">Clock In</button>
+                    <button onclick="discardTimer()" id="discardButton" class="danger" style="display: none;">Discard</button>
+                    <button onclick="addManualEntry()" class="secondary">+ Manual Entry</button>
+                </div>
+            </div>
+
+            <div class="live-display-column">
+                <div id="bigClockTime" class="big-display-time">00:00:00</div>
+                <div id="bigClockLabel" class="big-display-label">No Active Session</div>
+            </div>
+        </div>
+
+        <div id="pomoUtilityBox" class="pomo-utility-box">
+            <div class="pomo-header-layout">
+                <div class="pomo-title">
+                    <span id="pomoPrefixLabel">🎯 Current Focus:</span>
+                    <span id="pomoStatusLabel" style="font-weight:700; color:var(--primary)">Focus Block</span>
+                </div>
+                <div id="pomoTimeDisplay" class="pomo-display">25:00</div>
+                <div class="pomo-btns">
+                    <button id="pomoActionBtn" onclick="togglePomoUtility()" class="pomo-btn-sub">Start Pomo</button>
+                    <button onclick="resetPomoUtility()" class="pomo-btn-sub secondary">Reset</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card" style="padding: 16px 20px;">
+        <div class="controls-grid">
+            <input type="text" id="search" placeholder="Search logs..." onkeyup="filterTable()">
+            <div class="select-wrapper">
+                <select id="sortOrder" onchange="filterTable()">
+                    <option value="desc">Newest First</option>
+                    <option value="asc">Oldest First</option>
+                </select>
+            </div>
+            <button onclick="addManualEntry()">+ New Entry</button>
+            <div class="btn-wrapper-badge">
+                <button onclick="exportData()" style="width: 100%;">Export Backup</button>
+                <div id="backupWarningBadge" class="advise-badge">⚠️ Backup advised today!</div>
+            </div>
+            <button onclick="importData()" class="secondary">Import</button>
+            <button onclick="clearData()" class="danger">Clear Logs</button>
+        </div>
+    </div>
+
+    <div class="card" style="margin-top: 28px;">
+        <div class="inner-tabs-container">
+            <button id="tab-log" class="inner-tab active" onclick="switchInnerTab('log')">Activity Log</button>
+            <button id="tab-overview" class="inner-tab" onclick="switchInnerTab('overview')">Overview</button>
+        </div>
+
+        <div id="view-log" class="inner-view-section active">
+            <div class="preset-filters">
+                <button class="filter-btn active" id="filter-all" onclick="setPresetFilter('all')">All Time</button>
+                <button class="filter-btn" id="filter-today" onclick="setPresetFilter('today')">Today</button>
+                <button class="filter-btn" id="filter-week" onclick="setPresetFilter('week')">This Week</button>
+                <button class="filter-btn" id="filter-month" onclick="setPresetFilter('month')">This Month</button>
+            </div>
+
+            <div class="table-responsive">
+                <table id="logTable">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Task / Details</th>
+                            <th>Start</th>
+                            <th>End</th>
+                            <th>Duration (hrs)</th>
+                            <th style="width:90px;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="view-overview" class="inner-view-section">
+            <p class="subtitle" style="margin-bottom: 12px;">Total accumulated hours across all tasks and categories.</p>
+            
+            <div class="preset-filters" id="overview-filters">
+                <button class="filter-btn" id="ofilter-today" onclick="setOverviewPresetFilter('today')">Today</button>
+                <button class="filter-btn" id="ofilter-yesterday" onclick="setOverviewPresetFilter('yesterday')">Yesterday</button>
+                <button class="filter-btn" id="ofilter-this_week" onclick="setOverviewPresetFilter('this_week')">This Week</button>
+                <button class="filter-btn" id="ofilter-last_week" onclick="setOverviewPresetFilter('last_week')">Last Week</button>
+                <button class="filter-btn active" id="ofilter-this_month" onclick="setOverviewPresetFilter('this_month')">This Month</button>
+                <button class="filter-btn" id="ofilter-custom" onclick="setOverviewPresetFilter('custom')">Custom Range</button>
+            </div>
+
+            <div id="overview-custom-range" style="display: none; gap: 8px; margin-bottom: 14px; align-items: center; flex-wrap: wrap;">
+                <input type="date" id="overview-start-date" style="flex: 1; min-width: 130px;" onchange="updateOverviewCustomRange()">
+                <span style="color: var(--text-light); font-weight: 600;">to</span>
+                <input type="date" id="overview-end-date" style="flex: 1; min-width: 130px;" onchange="updateOverviewCustomRange()">
+            </div>
+            
+            <div class="table-responsive">
+                <table id="dailyOverviewTable">
+                    <thead>
+                        <tr>
+                            <th style="text-align: left;">Date</th>
+                            <th style="text-align: right; padding-right: 24px;">Total Time Logged</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div id="manualModal" class="modal-overlay-container">
+        <div class="card modal-card" style="max-width:520px;">
+            <h3 id="modalTitle" style="margin-top:0; font-weight:600;">New Time Entry</h3>
+            <input type="text" id="m_task" placeholder="Task / Project name" style="margin-bottom:12px;">
+            <textarea id="m_notes" placeholder="Notes / description of work done..." style="margin-bottom:12px;" rows="2"></textarea>
+            
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom: 12px;">
+                <input type="date" id="m_date">
+                <input type="time" id="m_start">
+            </div>
+            
+            <div style="margin-bottom: 20px; display: flex; gap: 8px; align-items: center;">
+                <input type="time" id="m_end" style="flex:1;">
+                <button onclick="setEndNow()" class="secondary" style="height:44px;">End Now</button>
+            </div>
+            
+            <div style="display: flex; gap: 12px; justify-content: flex-end;">
+                <button onclick="closeModal()" class="secondary" style="padding: 0 20px;">Cancel</button>
+                <button id="modalSaveButton" onclick="saveModalEntry()" style="padding: 0 24px;">Save Entry</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="settingsModal" class="modal-overlay-container">
+        <div class="card modal-card">
+            <div class="settings-heading">Settings</div>
+            
+            <div class="settings-panel-grid">
+                <div>
+                    <div class="settings-group-card">
+                        <div class="toggle-row">
+                            <span class="toggle-row-label">Display daily progress</span>
+                            <label class="switch-container">
+                                <input type="checkbox" id="displayDailyGoalInput" onchange="toggleSettingsInputVisibility()">
+                                <span class="switch-slider"></span>
+                            </label>
+                        </div>
+                        <div class="toggle-row">
+                            <span class="toggle-row-label">Display weekly progress</span>
+                            <label class="switch-container">
+                                <input type="checkbox" id="displayWeeklyGoalInput" onchange="toggleSettingsInputVisibility()">
+                                <span class="switch-slider"></span>
+                            </label>
+                        </div>
+                        <div class="toggle-row">
+                            <span class="toggle-row-label">Display monthly progress</span>
+                            <label class="switch-container">
+                                <input type="checkbox" id="displayMonthlyGoalInput" onchange="toggleSettingsInputVisibility()">
+                                <span class="switch-slider"></span>
+                            </label>
+                        </div>
+                        
+                        <div id="settingsGoalsInputsGrid" class="settings-inputs-grid">
+                            <div id="dailyGoalInputWrapper" class="settings-input-sub-box">
+                                <span class="settings-label">Daily Goal (hrs)</span>
+                                <input type="number" id="dailyGoalInput" min="0.1" step="0.1">
+                            </div>
+                            <div id="weeklyGoalInputWrapper" class="settings-input-sub-box">
+                                <span class="settings-label">Weekly Goal (hrs)</span>
+                                <input type="number" id="weeklyGoalInput" min="1" step="1">
+                            </div>
+                            <div id="monthlyGoalInputWrapper" class="settings-input-sub-box">
+                                <span class="settings-label">Monthly Goal (hrs)</span>
+                                <input type="number" id="monthlyGoalInput" min="1" step="1">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="settings-double-column">
+                    <div>
+                        <span class="settings-label">Default Task Name</span>
+                        <input type="text" id="defaultTaskInput">
+                    </div>
+                    
+                    <div>
+                        <span class="settings-label">Week Starts On</span>
+                        <div class="select-wrapper">
+                            <select id="weekStartInput">
+                                <option value="0">Sunday</option>
+                                <option value="1">Monday</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="settings-group-card" style="gap: 12px;">
+                        <div class="toggle-row">
+                            <span class="toggle-row-label">Display pomodoro timer</span>
+                            <label class="switch-container">
+                                <input type="checkbox" id="displayPomoInput" onchange="toggleAlarmVisibility()">
+                                <span class="switch-slider"></span>
+                            </label>
+                        </div>
+                        
+                        <div id="alarmSoundSettingRow" style="border-top: 1px dashed var(--border); padding-top: 12px; margin-top: 2px;">
+                            <span class="settings-label">Alarm Sound</span>
+                            <div style="display:flex; gap:8px;">
+                                <div class="select-wrapper" style="flex:1;">
+                                    <select id="alarmSoundInput">
+                                        <option value="chime">Gentle Chime</option>
+                                        <option value="beep">Digital Beep</option>
+                                        <option value="ring">Mechanical Ring</option>
+                                        <option value="triple">Triple Alert</option>
+                                        <option value="silent">None (Silent)</option>
+                                    </select>
+                                </div>
+                                <button type="button" onclick="testCurrentAlarmSound()" style="padding:0 12px; background:var(--bg); border:1px solid var(--border); color:var(--text)">🔊 Test</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div style="display: flex; gap: 12px; justify-content: flex-end; border-top: 1px solid var(--border); padding-top: 16px;">
+                <button onclick="closeSettings()" class="secondary">Cancel</button>
+                <button onclick="saveSettings()">Save Settings</button>
+            </div>
+        </div>
+    </div>
+
+    <input type="file" id="importFile" accept=".csv" style="display:none;" onchange="handleImport(event)">
+    <div id="toast" class="toast"></div>
+
+    <script>
+        const AppState = {
+            entries: [],
+            settings: {},
+            timer: {
+                intervalId: null,
+                startTime: null,
+                currentTask: ''
+            },
+            pomo: {
+                active: false,
+                state: 'focus', 
+                secondsLeft: 25 * 60
+            },
+            ui: {
+                filterPreset: 'all',
+                overviewFilterPreset: 'this_month',
+                editingIndex: null,
+                themeMode: localStorage.getItem('themeMode') || 'auto'
+            }
+        };
+
+        const CONSTANTS = {
+            POMO_FOCUS_TIME: 25 * 60,
+            POMO_BREAK_TIME: 5 * 60
+        };
+
+        const DOM = {
+            bigClockTime: null,
+            bigClockLabel: null,
+            timerButton: null,
+            discardButton: null,
+            pomoTimeDisplay: null,
+            pomoActionBtn: null,
+            pomoPrefixLabel: null,
+            pomoStatusLabel: null,
+            logTableBody: null
+        };
+
+        function init() {
+            DOM.bigClockTime = document.getElementById('bigClockTime');
+            DOM.bigClockLabel = document.getElementById('bigClockLabel');
+            DOM.timerButton = document.getElementById('timerButton');
+            DOM.discardButton = document.getElementById('discardButton');
+            DOM.pomoTimeDisplay = document.getElementById('pomoTimeDisplay');
+            DOM.pomoActionBtn = document.getElementById('pomoActionBtn');
+            DOM.pomoPrefixLabel = document.getElementById('pomoPrefixLabel');
+            DOM.pomoStatusLabel = document.getElementById('pomoStatusLabel');
+            DOM.logTableBody = document.querySelector('#logTable tbody');
+
+            loadData();
+            restoreActiveSessions();
+            setThemeMode(AppState.ui.themeMode);
+            renderAll();
+            checkBackupReminder();
+        }
+
+        function switchInnerTab(tabId) {
+            document.querySelectorAll('.inner-view-section').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.inner-tab').forEach(el => el.classList.remove('active'));
+            
+            document.getElementById(`view-${tabId}`).classList.add('active');
+            document.getElementById(`tab-${tabId}`).classList.add('active');
+        }
+
+        function loadData() {
+            try {
+                AppState.entries = JSON.parse(localStorage.getItem('timeEntries')) || [];
+                const savedSettings = JSON.parse(localStorage.getItem('trackerSettings')) || {};
+                
+                AppState.settings = {
+                    dailyGoal: savedSettings.dailyGoal ?? 4,
+                    weeklyGoal: savedSettings.weeklyGoal ?? 20,
+                    monthlyGoal: savedSettings.monthlyGoal ?? 80,
+                    displayDailyGoal: savedSettings.displayDailyGoal ?? false,
+                    displayWeeklyGoal: savedSettings.displayWeeklyGoal ?? true,
+                    displayMonthlyGoal: savedSettings.displayMonthlyGoal ?? false,
+                    defaultTask: savedSettings.defaultTask || "Notary Work",
+                    weekStartDay: savedSettings.weekStartDay ?? 0,
+                    displayPomo: !!savedSettings.displayPomo,
+                    alarmSound: savedSettings.alarmSound || "chime"
+                };
+            } catch (e) {
+                console.error("Storage corrupted, loading defaults.", e);
+                AppState.entries = [];
+            }
+        }
+
+        function checkBackupReminder() {
+            const badge = document.getElementById('backupWarningBadge');
+            if (!badge) return;
+
+            const lastBackup = localStorage.getItem('lastBackupDate');
+            if (!lastBackup) {
+                badge.style.display = 'flex';
+                return;
+            }
+
+            const lastDate = new Date(lastBackup);
+            const today = new Date();
+            
+            today.setHours(0,0,0,0);
+            lastDate.setHours(0,0,0,0);
+            
+            const diffTime = Math.abs(today - lastDate);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            
+            badge.style.display = (diffDays >= 3) ? 'flex' : 'none';
+        }
+
+        function saveEntries() {
+            localStorage.setItem('timeEntries', JSON.stringify(AppState.entries));
+            renderAll();
+            showToast('✓ Entry saved');
+        }
+
+        function restoreActiveSessions() {
+            const savedTask = localStorage.getItem('runningTimerTask');
+            const savedStart = localStorage.getItem('runningTimerStart');
+            
+            if (savedTask && savedStart) {
+                AppState.timer.currentTask = savedTask;
+                AppState.timer.startTime = new Date(savedStart);
+                document.getElementById('liveTaskInput').value = savedTask;
+                document.getElementById('liveNotesInput').value = localStorage.getItem('runningTimerNotes') || '';
+                DOM.bigClockTime.classList.add('active-glow');
+                startTickers();
+            }
+
+            const savedPomoState = localStorage.getItem('utilPomoState');
+            if (savedPomoState) AppState.pomo.state = savedPomoState;
+
+            if (localStorage.getItem('utilPomoActive') === 'true') {
+                const targetTime = new Date(localStorage.getItem('utilPomoTargetTime'));
+                if (targetTime > new Date()) {
+                    AppState.pomo.active = true;
+                    AppState.pomo.secondsLeft = Math.round((targetTime - new Date()) / 1000);
+                    startTickers();
+                } else {
+                    AppState.pomo.secondsLeft = (AppState.pomo.state === 'focus') ? CONSTANTS.POMO_FOCUS_TIME : CONSTANTS.POMO_BREAK_TIME;
+                }
+            } else {
+                AppState.pomo.secondsLeft = parseInt(localStorage.getItem('utilPomoSecondsLeft')) || CONSTANTS.POMO_FOCUS_TIME;
+            }
+            updatePomoUI();
+        }
+
+        function startTickers() {
+            if (!AppState.timer.intervalId) {
+                AppState.timer.intervalId = setInterval(globalTickHandler, 1000);
+            }
+            updateTrackerUI(true);
+            updatePomoUI();
+            globalTickHandler(); 
+        }
+
+        function globalTickHandler() {
+            if (AppState.timer.startTime) {
+                const diff = new Date() - AppState.timer.startTime;
+                const h = Math.floor(diff / 3600000).toString().padStart(2, '0');
+                const m = Math.floor((diff % 3600000) / 60000).toString().padStart(2, '0');
+                const s = Math.floor((diff % 60000) / 1000).toString().padStart(2, '0');
+                
+                DOM.bigClockTime.textContent = `${h}:${m}:${s}`;
+                DOM.bigClockLabel.textContent = `Tracking: ${AppState.timer.currentTask}`;
+            }
+
+            if (AppState.pomo.active) {
+                const targetStr = localStorage.getItem('utilPomoTargetTime');
+                if (targetStr) {
+                    AppState.pomo.secondsLeft = Math.max(0, Math.round((new Date(targetStr) - new Date()) / 1000));
+                } else {
+                    AppState.pomo.secondsLeft--;
+                }
+
+                if (AppState.pomo.secondsLeft <= 0) handlePomoCompletion();
+                renderPomoDisplayOnly();
+            }
+            updateBrowserTabTitle();
+        }
+
+        function handlePomoCompletion() {
+            triggerAlarmSound();
+            if (AppState.pomo.state === 'focus') {
+                AppState.pomo.state = 'break';
+                AppState.pomo.secondsLeft = CONSTANTS.POMO_BREAK_TIME;
+                alert("🍅 Focus block complete! Take a break.");
+            } else {
+                AppState.pomo.state = 'focus';
+                AppState.pomo.secondsLeft = CONSTANTS.POMO_FOCUS_TIME;
+                alert("☕ Break completed! Returning to focus.");
+            }
+            
+            localStorage.setItem('utilPomoState', AppState.pomo.state);
+            localStorage.setItem('utilPomoTargetTime', new Date(Date.now() + AppState.pomo.secondsLeft * 1000).toISOString());
+            updatePomoUI();
+        }
+
+        function renderAll() {
+            document.getElementById('appSubtitle').textContent = AppState.settings.defaultTask;
+            document.getElementById('pomoUtilityBox').style.display = AppState.settings.displayPomo ? 'block' : 'none';
+            
+            populateRecentTasks();
+            renderTable();
+            renderStats();
+            renderDailyOverview();
+        }
+
+        function renderPomoDisplayOnly() {
+            const m = Math.floor(AppState.pomo.secondsLeft / 60).toString().padStart(2, '0');
+            const s = (AppState.pomo.secondsLeft % 60).toString().padStart(2, '0');
+            DOM.pomoTimeDisplay.textContent = `${m}:${s}`;
+        }
+
+        function updateTrackerUI(isRunning) {
+            DOM.timerButton.textContent = isRunning ? "Clock Out" : "Clock In";
+            DOM.timerButton.style.background = isRunning ? "#DC2626" : "";
+            DOM.discardButton.style.display = isRunning ? "inline-flex" : "none";
+            DOM.bigClockTime.classList.toggle('active-glow', isRunning);
+            
+            if (!isRunning) {
+                DOM.bigClockTime.textContent = "00:00:00";
+                DOM.bigClockLabel.textContent = "No Active Session";
+            }
+        }
+
+        function updatePomoUI() {
+            const isFocus = AppState.pomo.state === 'focus';
+            DOM.pomoPrefixLabel.textContent = isFocus ? "🎯 Current Focus:" : "☕ Break Time:";
+            DOM.pomoStatusLabel.textContent = isFocus ? "Focus Block" : "Rest Break";
+            DOM.pomoStatusLabel.style.color = isFocus ? "var(--primary)" : "#10b981";
+            
+            if (AppState.pomo.active) {
+                DOM.pomoActionBtn.textContent = "Pause Pomo";
+                DOM.pomoActionBtn.className = "pomo-btn-sub danger";
+            } else {
+                DOM.pomoActionBtn.textContent = AppState.pomo.secondsLeft < (isFocus ? CONSTANTS.POMO_FOCUS_TIME : CONSTANTS.POMO_BREAK_TIME) ? "Resume Pomo" : "Start Pomo";
+                DOM.pomoActionBtn.className = "pomo-btn-sub";
+            }
+            renderPomoDisplayOnly();
+        }
+
+        function renderTable() {
+            if (!DOM.logTableBody) return;
+            DOM.logTableBody.innerHTML = '';
+            
+            let filtered = getFilteredEntries();
+            const term = document.getElementById('search').value.toLowerCase().trim();
+            if (term) {
+                filtered = filtered.filter(e => e.task.toLowerCase().includes(term) || e.date.includes(term) || (e.notes && e.notes.toLowerCase().includes(term)));
+            }
+            
+            const sortOrder = document.getElementById('sortOrder').value;
+            filtered.sort((a, b) => {
+                const timeA = new Date(a.date).getTime(), timeB = new Date(b.date).getTime();
+                if (timeA !== timeB) return sortOrder === 'desc' ? timeB - timeA : timeA - timeB;
+                return sortOrder === 'desc' ? b.start.localeCompare(a.start) : a.start.localeCompare(b.start);
+            });
+
+            filtered.forEach(entry => {
+                const globalIndex = AppState.entries.indexOf(entry);
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${entry.date}</td>
+                    <td><strong>${entry.task}</strong>${entry.notes ? `<div style="font-size:0.85em; color:var(--text-light); margin-top:4px;">${entry.notes}</div>` : ''}</td>
+                    <td>${to12Hour(entry.start)}</td><td>${to12Hour(entry.end)}</td>
+                    <td><strong>${entry.duration}</strong></td>
+                    <td><div class="action-buttons">
+                        <button onclick="editEntry(${globalIndex})" class="action-btn" style="background:#64748B;">Edit</button>
+                        <button onclick="deleteEntry(${globalIndex})" class="action-btn danger">Delete</button>
+                    </div></td>
+                `;
+                DOM.logTableBody.appendChild(row);
+            });
+        }
+
+        function setOverviewPresetFilter(preset) {
+            AppState.ui.overviewFilterPreset = preset;
+            document.querySelectorAll('#overview-filters .filter-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.id === `ofilter-${preset}`);
+            });
+            const customDiv = document.getElementById('overview-custom-range');
+            customDiv.style.display = preset === 'custom' ? 'flex' : 'none';
+            renderDailyOverview();
+        }
+
+        function updateOverviewCustomRange() {
+            if (AppState.ui.overviewFilterPreset === 'custom') {
+                renderDailyOverview();
+            }
+        }
+
+        function getOverviewDateRange() {
+            const preset = AppState.ui.overviewFilterPreset || 'this_month';
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            
+            let start = new Date(today);
+            let end = new Date(today);
+            end.setHours(23, 59, 59, 999);
+
+            if (preset === 'yesterday') {
+                start.setDate(start.getDate() - 1);
+                end.setDate(end.getDate() - 1);
+            } else if (preset === 'this_week') {
+                start = getStartOfWeek();
+            } else if (preset === 'last_week') {
+                start = getStartOfWeek();
+                start.setDate(start.getDate() - 7);
+                end = new Date(start);
+                end.setDate(end.getDate() + 6);
+                end.setHours(23, 59, 59, 999);
+            } else if (preset === 'this_month') {
+                start.setDate(1);
+            } else if (preset === 'custom') {
+                const startInput = document.getElementById('overview-start-date').value;
+                const endInput = document.getElementById('overview-end-date').value;
+                if (startInput) start = new Date(startInput + 'T00:00:00'); else start = new Date('2000-01-01');
+                if (endInput) { end = new Date(endInput + 'T00:00:00'); end.setHours(23, 59, 59, 999); } else end = new Date('2100-01-01');
+            }
+            return { start, end };
+        }
+
+        function renderDailyOverview() {
+            const tbody = document.querySelector('#dailyOverviewTable tbody');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+            
+            const range = getOverviewDateRange();
+            const filteredEntries = AppState.entries.filter(e => {
+                const eDate = new Date(e.date + 'T00:00:00');
+                return eDate >= range.start && eDate <= range.end;
+            });
+
+            const aggregated = {};
+            filteredEntries.forEach(e => {
+                if(!aggregated[e.date]) aggregated[e.date] = 0;
+                aggregated[e.date] += (e.duration || 0);
+            });
+            
+            const sortedDates = Object.keys(aggregated).sort((a,b) => new Date(b) - new Date(a));
+            
+            if (sortedDates.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="2" style="text-align:center; padding: 32px; color:var(--text-light);">No time logged for this period.</td></tr>';
+                return;
+            }
+
+            sortedDates.forEach(date => {
+                const totalHours = aggregated[date];
+                const h = Math.floor(totalHours);
+                const m = Math.round((totalHours - h) * 60);
+                
+                const dateObj = new Date(date + 'T00:00:00');
+                const dateDisplay = dateObj.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td style="font-weight: 500; text-align: left;">${dateDisplay}</td>
+                    <td style="text-align: right; padding-right: 24px;">
+                        <span style="background: var(--toggle-bg); padding: 6px 12px; border-radius: 8px; font-weight: 700; color: var(--text); font-variant-numeric: tabular-nums;">
+                            ${h}h ${m.toString().padStart(2, '0')}m
+                        </span>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function renderStats() {
+            const todayStr = getLocalYYYYMMDD();
+            const dayTotal = calculateTotalForPeriod(e => e.date === todayStr);
+            const weekTotal = calculateTotalForPeriod(e => {
+                const weekStart = getStartOfWeek();
+                return new Date(e.date + 'T00:00:00') >= weekStart;
+            });
+            const monthTotal = calculateTotalForPeriod(e => {
+                const now = new Date();
+                return new Date(e.date + 'T00:00:00') >= new Date(now.getFullYear(), now.getMonth(), 1);
+            });
+            const allTotal = calculateTotalForPeriod(() => true);
+
+            document.getElementById('stats').innerHTML = `
+                <div><strong>This Day</strong><br>${dayTotal.toFixed(1)} hours</div>
+                <div><strong>This Week</strong><br>${weekTotal.toFixed(1)} hours</div>
+                <div><strong>This Month</strong><br>${monthTotal.toFixed(1)} hours</div>
+                <div><strong>All Time</strong><br>${allTotal.toFixed(1)} hours</div>
+            `;
+
+            updateProgressBar('daily', dayTotal, AppState.settings.dailyGoal);
+            updateProgressBar('weekly', weekTotal, AppState.settings.weeklyGoal);
+            updateProgressBar('monthly', monthTotal, AppState.settings.monthlyGoal);
+        }
+
+        function toggleTimer() {
+            if (!AppState.timer.startTime) {
+                const inputTask = document.getElementById('liveTaskInput').value.trim();
+                AppState.timer.currentTask = inputTask || AppState.settings.defaultTask;
+                AppState.timer.startTime = new Date();
+                
+                document.getElementById('liveTaskInput').value = AppState.timer.currentTask;
+                localStorage.setItem('runningTimerTask', AppState.timer.currentTask);
+                localStorage.setItem('runningTimerStart', AppState.timer.startTime.toISOString());
+                localStorage.setItem('runningTimerNotes', document.getElementById('liveNotesInput').value.trim());
+                
+                startTickers();
+            } else {
+                clockOut();
+            }
+        }
+
+        function clockOut() {
+            const endTime = new Date();
+            const duration = ((endTime - AppState.timer.startTime) / 3600000).toFixed(2);
+            
+            const payload = {
+                date: getLocalYYYYMMDD(AppState.timer.startTime),
+                task: AppState.timer.currentTask,
+                start: AppState.timer.startTime.toTimeString().slice(0,5),
+                end: endTime.toTimeString().slice(0,5),
+                duration: parseFloat(duration),
+                notes: document.getElementById('liveNotesInput').value.trim()
+            };
+
+            if (checkOverlapConflict(payload.date, payload.start, payload.end) && !confirm("Overlap detected. Save anyway?")) return;
+
+            AppState.entries.push(payload);
+            clearLiveInputsAndStorage();
+            stopTimerState();
+            saveEntries();
+        }
+
+        function stopTimerState() {
+            AppState.timer.startTime = null;
+            AppState.timer.currentTask = '';
+            
+            if (!AppState.pomo.active && AppState.timer.intervalId) {
+                clearInterval(AppState.timer.intervalId);
+                AppState.timer.intervalId = null;
+            }
+            
+            updateTrackerUI(false);
+            updateBrowserTabTitle();
+        }
+
+        function discardTimer() {
+            if (confirm("Discard this session? Data will be lost.")) {
+                clearLiveInputsAndStorage();
+                stopTimerState();
+                showToast('Session discarded');
+            }
+        }
+
+        function togglePomoUtility() {
+            AppState.pomo.active = !AppState.pomo.active;
+            
+            if (AppState.pomo.active) {
+                localStorage.setItem('utilPomoActive', 'true');
+                localStorage.setItem('utilPomoTargetTime', new Date(Date.now() + AppState.pomo.secondsLeft * 1000).toISOString());
+                startTickers();
+            } else {
+                localStorage.setItem('utilPomoActive', 'false');
+                localStorage.setItem('utilPomoSecondsLeft', AppState.pomo.secondsLeft);
+                localStorage.removeItem('utilPomoTargetTime');
+            }
+            updatePomoUI();
+            updateBrowserTabTitle();
+        }
+
+        function resetPomoUtility() {
+            AppState.pomo.active = false;
+            AppState.pomo.state = 'focus';
+            AppState.pomo.secondsLeft = CONSTANTS.POMO_FOCUS_TIME;
+            
+            ['utilPomoActive', 'utilPomoState', 'utilPomoTargetTime', 'utilPomoSecondsLeft'].forEach(k => localStorage.removeItem(k));
+            
+            updatePomoUI();
+            if (!AppState.timer.startTime && AppState.timer.intervalId) {
+                clearInterval(AppState.timer.intervalId);
+                AppState.timer.intervalId = null;
+            }
+        }
+
+        function addManualEntry() {
+            AppState.ui.editingIndex = null;
+            document.getElementById('modalTitle').textContent = "New Time Entry";
+            document.getElementById('modalSaveButton').textContent = "Save Entry";
+            document.getElementById('m_task').value = ''; document.getElementById('m_notes').value = '';
+            document.getElementById('m_date').value = getLocalYYYYMMDD();
+            document.getElementById('m_start').value = ''; document.getElementById('m_end').value = '';
+            document.getElementById('manualModal').style.display = 'flex';
+            document.getElementById('m_task').focus();
+        }
+
+        function editEntry(index) {
+            AppState.ui.editingIndex = index; 
+            const entry = AppState.entries[index];
+            document.getElementById('modalTitle').textContent = "Edit Time Entry";
+            document.getElementById('modalSaveButton').textContent = "Update Entry";
+            document.getElementById('m_task').value = entry.task;
+            document.getElementById('m_notes').value = entry.notes || "";
+            document.getElementById('m_date').value = entry.date;
+            document.getElementById('m_start').value = entry.start;
+            document.getElementById('m_end').value = entry.end;
+            document.getElementById('manualModal').style.display = 'flex';
+            document.getElementById('m_task').focus();
+        }
+
+        function closeModal() { document.getElementById('manualModal').style.display = 'none'; AppState.ui.editingIndex = null; }
+
+        function saveModalEntry() {
+            const task = document.getElementById('m_task').value.trim() || 'Untitled';
+            const notes = document.getElementById('m_notes').value.trim();
+            const date = document.getElementById('m_date').value;
+            const start = document.getElementById('m_start').value;
+            const end = document.getElementById('m_end').value;
+
+            if (!date || !start || !end) { alert("Please complete form entirely."); return; }
+            const conflict = checkOverlapConflict(date, start, end, AppState.ui.editingIndex);
+            if (conflict && !confirm("Overlap conflict detected. Force save?")) return;
+
+            const duration = parseFloat(calculateDuration(start, end));
+            const payload = { date, task, start, end, duration, notes: notes || "" };
+            
+            if (AppState.ui.editingIndex !== null) AppState.entries[AppState.ui.editingIndex] = payload;
+            else AppState.entries.push(payload);
+            
+            saveEntries(); closeModal();
+        }
+
+        function deleteEntry(index) { if (confirm("Delete this entry permanently?")) { AppState.entries.splice(index, 1); saveEntries(); } }
+
+        function setEndNow() {
+            const now = new Date();
+            document.getElementById('m_end').value = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+        }
+
+        function openSettings() {
+            document.getElementById('dailyGoalInput').value = AppState.settings.dailyGoal;
+            document.getElementById('weeklyGoalInput').value = AppState.settings.weeklyGoal;
+            document.getElementById('monthlyGoalInput').value = AppState.settings.monthlyGoal;
+            
+            document.getElementById('displayDailyGoalInput').checked = AppState.settings.displayDailyGoal;
+            document.getElementById('displayWeeklyGoalInput').checked = AppState.settings.displayWeeklyGoal;
+            document.getElementById('displayMonthlyGoalInput').checked = AppState.settings.displayMonthlyGoal;
+            
+            document.getElementById('defaultTaskInput').value = AppState.settings.defaultTask;
+            document.getElementById('weekStartInput').value = AppState.settings.weekStartDay;
+            document.getElementById('displayPomoInput').checked = AppState.settings.displayPomo;
+            document.getElementById('alarmSoundInput').value = AppState.settings.alarmSound;
+            
+            toggleAlarmVisibility();
+            toggleSettingsInputVisibility();
+            document.getElementById('settingsModal').style.display = 'flex';
+        }
+
+        function closeSettings() { document.getElementById('settingsModal').style.display = 'none'; }
+
+        function saveSettings() {
+            AppState.settings.dailyGoal = parseFloat(document.getElementById('dailyGoalInput').value) || 4;
+            AppState.settings.weeklyGoal = parseFloat(document.getElementById('weeklyGoalInput').value) || 20;
+            AppState.settings.monthlyGoal = parseFloat(document.getElementById('monthlyGoalInput').value) || 80;
+            
+            AppState.settings.displayDailyGoal = document.getElementById('displayDailyGoalInput').checked;
+            AppState.settings.displayWeeklyGoal = document.getElementById('displayWeeklyGoalInput').checked;
+            AppState.settings.displayMonthlyGoal = document.getElementById('displayMonthlyGoalInput').checked;
+            
+            AppState.settings.defaultTask = document.getElementById('defaultTaskInput').value.trim() || "Notary Work";
+            AppState.settings.weekStartDay = parseInt(document.getElementById('weekStartInput').value);
+            AppState.settings.displayPomo = document.getElementById('displayPomoInput').checked;
+            AppState.settings.alarmSound = document.getElementById('alarmSoundInput').value || "chime";
+            
+            localStorage.setItem('trackerSettings', JSON.stringify(AppState.settings));
+            closeSettings();
+            renderAll();
+            showToast('Settings saved');
+        }
+
+        function toggleAlarmVisibility() {
+            const pomoChecked = document.getElementById('displayPomoInput').checked;
+            const alarmRow = document.getElementById('alarmSoundSettingRow');
+            if (alarmRow) alarmRow.style.display = pomoChecked ? 'block' : 'none';
+        }
+
+        function toggleSettingsInputVisibility() {
+            const displayDaily = document.getElementById('displayDailyGoalInput').checked;
+            const displayWeekly = document.getElementById('displayWeeklyGoalInput').checked;
+            const displayMonthly = document.getElementById('displayMonthlyGoalInput').checked;
+
+            document.getElementById('dailyGoalInputWrapper').style.display = displayDaily ? 'flex' : 'none';
+            document.getElementById('weeklyGoalInputWrapper').style.display = displayWeekly ? 'flex' : 'none';
+            document.getElementById('monthlyGoalInputWrapper').style.display = displayMonthly ? 'flex' : 'none';
+            
+            const grid = document.getElementById('settingsGoalsInputsGrid');
+            grid.style.display = (!displayDaily && !displayWeekly && !displayMonthly) ? 'none' : 'grid';
+        }
+
+        function exportData() {
+            let csv = "Date,Task,Start,End,Duration,Notes\n";
+            AppState.entries.forEach(e => { csv += `"${e.date}","${e.task.replace(/"/g,'""')}","${e.start}","${e.end}",${e.duration},"${(e.notes || '').replace(/"/g,'""')}"\n`; });
+            const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], {type: 'text/csv'}));
+            a.download = `time-tracker-backup-${getLocalYYYYMMDD()}.csv`; a.click();
+            
+            localStorage.setItem('lastBackupDate', getLocalYYYYMMDD());
+            const badge = document.getElementById('backupWarningBadge');
+            if (badge) badge.style.display = 'none';
+            
+            showToast('Backup exported successfully');
+        }
+
+        function importData() { document.getElementById('importFile').click(); }
+        function handleImport(e) {
+            const file = e.target.files[0]; if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(ev) {
+                ev.target.result.split('\n').slice(1).forEach(row => {
+                    if (!row.trim()) return;
+                    const cols = row.split(',').map(c => c.replace(/^"|"$/g, '').replace(/""/g, '"'));
+                    if (cols.length >= 4) AppState.entries.push({ date: cols[0], task: cols[1], start: cols[2], end: cols[3], duration: parseFloat(cols[4] || 0), notes: cols[5] || "" });
+                });
+                saveEntries(); showToast(`Import complete`);
+            };
+            reader.readAsText(file);
+        }
+
+        function clearData() { if (confirm("⚠️ Clear ALL database logs permanently?")) { AppState.entries = []; saveEntries(); } }
+
+        function setPresetFilter(preset) {
+            AppState.ui.filterPreset = preset;
+            document.querySelectorAll('#view-log .preset-filters .filter-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.id === `filter-${preset}`);
+            });
+            filterTable();
+        }
+
+        function filterTable() { renderTable(); }
+
+        function populateRecentTasks() {
+            const counts = {};
+            AppState.entries.forEach(e => counts[e.task] = (counts[e.task] || 0) + 1);
+            const sortedTasks = Object.keys(counts).sort((a,b) => counts[b] - counts[a]).slice(0, 5);
+            const select = document.getElementById('recentTasksSelect');
+            select.innerHTML = '<option value="">-- Select Recent Task --</option>';
+            sortedTasks.forEach(t => {
+                const opt = document.createElement('option'); opt.value = t;
+                opt.textContent = `${t} (${counts[t]}x)`; select.appendChild(opt);
+            });
+        }
+
+        function useRecentTask(selectEl) {
+            if (selectEl.value) document.getElementById('liveTaskInput').value = selectEl.value;
+        }
+
+        function triggerAlarmSound(soundType) {
+            try {
+                const type = soundType || AppState.settings.alarmSound || 'chime';
+                if (type === 'silent') return;
+                
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                if (type === 'chime') {
+                    const notes = [523.25, 659.25, 783.99, 1046.50]; 
+                    notes.forEach((freq, idx) => {
+                        const osc = ctx.createOscillator(); const gain = ctx.createGain();
+                        osc.type = 'sine'; osc.frequency.setValueAtTime(freq, ctx.currentTime + (idx * 0.08));
+                        gain.gain.setValueAtTime(0.08, ctx.currentTime + (idx * 0.08));
+                        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + (idx * 0.08) + 0.6);
+                        osc.connect(gain); gain.connect(ctx.destination);
+                        osc.start(ctx.currentTime + (idx * 0.08)); osc.stop(ctx.currentTime + (idx * 0.08) + 0.6);
+                    });
+                } else if (type === 'beep') {
+                    [0.0, 0.15].forEach(delay => {
+                        const osc = ctx.createOscillator(); const gain = ctx.createGain();
+                        osc.type = 'square'; osc.frequency.setValueAtTime(2000, ctx.currentTime + delay);
+                        gain.gain.setValueAtTime(0.05, ctx.currentTime + delay);
+                        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delay + 0.08);
+                        osc.connect(gain); gain.connect(ctx.destination);
+                        osc.start(ctx.currentTime + delay); osc.stop(ctx.currentTime + delay + 0.08);
+                    });
+                } else if (type === 'ring') {
+                    const duration = 0.5;
+                    const osc1 = ctx.createOscillator(); const osc2 = ctx.createOscillator(); const gain = ctx.createGain();
+                    osc1.type = 'sine'; osc1.frequency.setValueAtTime(850, ctx.currentTime);
+                    osc2.type = 'sawtooth'; osc2.frequency.setValueAtTime(900, ctx.currentTime);
+                    gain.gain.setValueAtTime(0.04, ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+                    osc1.connect(gain); osc2.connect(gain); gain.connect(ctx.destination);
+                    osc1.start(); osc2.start(); osc1.stop(ctx.currentTime + duration); osc2.stop(ctx.currentTime + duration);
+                } else if (type === 'triple') {
+                    [0.0, 0.2, 0.4].forEach(delay => {
+                        const osc = ctx.createOscillator(); const gain = ctx.createGain();
+                        osc.type = 'triangle'; osc.frequency.setValueAtTime(1200, ctx.currentTime + delay);
+                        gain.gain.setValueAtTime(0.08, ctx.currentTime + delay);
+                        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delay + 0.15);
+                        osc.connect(gain); gain.connect(ctx.destination);
+                        osc.start(ctx.currentTime + delay); osc.stop(ctx.currentTime + delay + 0.15);
+                    });
+                }
+            } catch(e) { console.error("Audio Synthesis Interrupted:", e); }
+        }
+
+        function testCurrentAlarmSound() {
+            triggerAlarmSound(document.getElementById('alarmSoundInput').value);
+        }
+
+        function setThemeMode(mode) {
+            AppState.ui.themeMode = mode;
+            localStorage.setItem('themeMode', mode);
+            document.querySelectorAll('.theme-toggle-option').forEach(el => {
+                el.classList.toggle('active', el.getAttribute('data-value') === mode);
+            });
+            if (mode === 'auto') {
+                const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                document.documentElement.setAttribute('data-theme', systemDark ? 'dark' : 'light');
+            } else {
+                document.documentElement.setAttribute('data-theme', mode);
+            }
+        }
+
+        function getLocalYYYYMMDD(d = new Date()) {
+            return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        }
+
+        function to12Hour(time24) {
+            if (!time24) return '';
+            let [h, m] = time24.split(':').map(Number);
+            return `${h % 12 || 12}:${m.toString().padStart(2, '0')} ${h >= 12 ? 'PM' : 'AM'}`;
+        }
+
+        function clearLiveInputsAndStorage() {
+            ['runningTimerTask', 'runningTimerStart', 'runningTimerNotes'].forEach(k => localStorage.removeItem(k));
+            document.getElementById('liveNotesInput').value = '';
+            document.getElementById('liveTaskInput').value = '';
+        }
+
+        function checkOverlapConflict(date, start, end, excludeIdx = null) {
+            const toMins = t => { const [h,m] = t.split(':').map(Number); return h*60+m; };
+            const tStart = toMins(start), tEnd = toMins(end) + (toMins(end) < toMins(start) ? 1440 : 0);
+            
+            return AppState.entries.find((e, i) => {
+                if (i === excludeIdx || e.date !== date) return false;
+                const eStart = toMins(e.start), eEnd = toMins(e.end) + (toMins(e.end) < eStart ? 1440 : 0);
+                return tStart < eEnd && tEnd > eStart;
+            });
+        }
+
+        function calculateDuration(start, end) {
+            const [sh, sm] = start.split(':').map(Number);
+            const [eh, em] = end.split(':').map(Number);
+            let dur = (eh - sh) + (em - sm)/60;
+            if (dur < 0) dur += 24; 
+            return Math.max(0, dur).toFixed(2);
+        }
+
+        function updateProgressBar(type, total, goal) {
+            const row = document.getElementById(`${type}GoalRow`);
+            if (!row) return;
+            row.style.display = AppState.settings[`display${type.charAt(0).toUpperCase() + type.slice(1)}Goal`] ? 'flex' : 'none';
+            
+            const percent = Math.min(100, (total / goal) * 100) || 0;
+            document.getElementById(`${type}TotalLabel`).textContent = `${total.toFixed(2)} / ${goal.toFixed(2)} hrs`;
+            
+            const bar = document.getElementById(`${type}ProgressBar`);
+            bar.style.width = `${percent}%`;
+            bar.style.backgroundColor = percent >= 100 ? '#22C55E' : percent >= 75 ? '#3B82F6' : percent >= 50 ? '#F97316' : '#EF4444';
+        }
+
+        function calculateTotalForPeriod(filterFn) {
+            return AppState.entries.filter(filterFn).reduce((sum, e) => sum + (e.duration || 0), 0);
+        }
+
+        function getStartOfWeek() {
+            const d = new Date();
+            d.setDate(d.getDate() - (d.getDay() - AppState.settings.weekStartDay + 7) % 7);
+            d.setHours(0,0,0,0);
+            return d;
+        }
+
+        function getFilteredEntries() {
+            const now = new Date(), todayStr = getLocalYYYYMMDD(now);
+            if (AppState.ui.filterPreset === 'today') return AppState.entries.filter(e => e.date === todayStr);
+            if (AppState.ui.filterPreset === 'week') return AppState.entries.filter(e => new Date(e.date + 'T00:00:00') >= getStartOfWeek());
+            if (AppState.ui.filterPreset === 'month') return AppState.entries.filter(e => new Date(e.date + 'T00:00:00') >= new Date(now.getFullYear(), now.getMonth(), 1));
+            return [...AppState.entries];
+        }
+
+        function updateBrowserTabTitle() {
+            let parts = [];
+            if (AppState.timer.startTime) {
+                const diff = new Date() - AppState.timer.startTime;
+                parts.push(`⏳ ${Math.floor(diff / 3600000).toString().padStart(2,'0')}:${Math.floor((diff % 3600000)/60000).toString().padStart(2,'0')}`);
+            }
+            if (AppState.pomo.active) parts.push(`🍅 ${Math.floor(AppState.pomo.secondsLeft / 60).toString().padStart(2, '0')}:${(AppState.pomo.secondsLeft % 60).toString().padStart(2, '0')}`);
+            document.title = parts.length ? `(${parts.join(' | ')}) Time Tracker` : "Time Tracker";
+        }
+
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            t.textContent = msg; t.style.display = 'block';
+            setTimeout(() => t.style.display = 'none', 2200);
+        }
+
+        window.addEventListener('storage', function(event) {
+            if (event.key === 'timeEntries') {
+                loadData();
+                renderAll();
+                showToast('🔄 Logs synchronized');
+            }
+            if (event.key === 'trackerSettings') {
+                loadData();
+                if (document.getElementById('settingsModal').style.display === 'flex') closeSettings();
+                renderAll();
+                showToast('🔄 Settings synchronized');
+            }
+            if (event.key === 'runningTimerStart' || event.key === 'runningTimerTask') {
+                const remoteStart = localStorage.getItem('runningTimerStart');
+                const remoteTask = localStorage.getItem('runningTimerTask');
+                if (remoteStart && remoteTask) {
+                    AppState.timer.startTime = new Date(remoteStart);
+                    AppState.timer.currentTask = remoteTask;
+                    document.getElementById('liveTaskInput').value = AppState.timer.currentTask;
+                    document.getElementById('liveNotesInput').value = localStorage.getItem('runningTimerNotes') || '';
+                    startTickers();
+                } else {
+                    stopTimerState();
+                }
+            }
+            if (event.key === 'utilPomoActive' || event.key === 'utilPomoTargetTime' || event.key === 'utilPomoState') {
+                restoreActiveSessions();
+            }
+            if (event.key === 'themeMode') {
+                setThemeMode(localStorage.getItem('themeMode') || 'auto');
+            }
+        });
+
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+            if (AppState.ui.themeMode === 'auto') {
+                const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                document.documentElement.setAttribute('data-theme', systemDark ? 'dark' : 'light');
+            }
+        });
+
+        document.getElementById('settingsModal').addEventListener('click', function(e) {
+            if(e.target === this) closeSettings();
+        });
+
+        document.addEventListener('keydown', e => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'k') { e.preventDefault(); document.getElementById('search').focus(); }
+        });
+
+        init();
+    </script>
+</body>
+</html>
